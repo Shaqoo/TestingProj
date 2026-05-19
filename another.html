@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Babylon.js Neon Portal</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      overflow:hidden;
+      background:#050510;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    #renderCanvas{
+      width:100vw;
+      height:100vh;
+      touch-action:none;
+      display:block;
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      pointer-events:none;
+      z-index:10;
+    }
+
+    h1{
+      font-size:clamp(3rem, 10vw, 8rem);
+      font-weight:900;
+      letter-spacing:8px;
+      text-transform:uppercase;
+
+      background:linear-gradient(
+        90deg,
+        #00e5ff,
+        #7b61ff,
+        #ff4fd8
+      );
+
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+
+      animation: glow 3s ease-in-out infinite;
+    }
+
+    p{
+      margin-top:16px;
+      color:#ffffffaa;
+      letter-spacing:4px;
+      font-size:14px;
+    }
+
+    @keyframes glow{
+      0%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 10px #00e5ff66);
+      }
+
+      50%{
+        transform:scale(1.03);
+        filter:drop-shadow(0 0 35px #ff4fd888);
+      }
+
+      100%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 15px #7b61ff77);
+      }
+    }
+
+    .card{
+      position:absolute;
+      bottom:30px;
+      left:50%;
+      transform:translateX(-50%);
+
+      width:320px;
+      padding:18px;
+
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+
+      backdrop-filter:blur(12px);
+
+      border-radius:20px;
+
+      text-align:center;
+      color:white;
+
+      letter-spacing:2px;
+      font-size:14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="overlay">
+    <h1>NEON GATE</h1>
+    <p>BABYLON.JS EXPERIENCE</p>
+  </div>
+
+  <div class="card">
+    Drag to rotate • Scroll to zoom ✨
+  </div>
+
+  <canvas id="renderCanvas"></canvas>
+
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+  <script>
+    const canvas = document.getElementById("renderCanvas");
+
+    const engine = new BABYLON.Engine(
+      canvas,
+      true
+    );
+
+    const createScene = () => {
+
+      const scene = new BABYLON.Scene(engine);
+
+      scene.clearColor =
+        new BABYLON.Color4(0.02,0.02,0.07,1);
+
+      // Camera
+      const camera =
+        new BABYLON.ArcRotateCamera(
+          "camera",
+          Math.PI / 2,
+          Math.PI / 2.5,
+          12,
+          BABYLON.Vector3.Zero(),
+          scene
+        );
+
+      camera.attachControl(canvas, true);
+
+      camera.lowerRadiusLimit = 6;
+      camera.upperRadiusLimit = 20;
+
+      // Lights
+      const hemi =
+        new BABYLON.HemisphericLight(
+          "hemi",
+          new BABYLON.Vector3(0,1,0),
+          scene
+        );
+
+      hemi.intensity = 0.7;
+
+      const blueLight =
+        new BABYLON.PointLight(
+          "blue",
+          new BABYLON.Vector3(6,6,0),
+          scene
+        );
+
+      blueLight.diffuse =
+        new BABYLON.Color3(0,0.9,1);
+
+      blueLight.intensity = 120;
+
+      const pinkLight =
+        new BABYLON.PointLight(
+          "pink",
+          new BABYLON.Vector3(-6,3,0),
+          scene
+        );
+
+      pinkLight.diffuse =
+        new BABYLON.Color3(1,0.2,0.7);
+
+      pinkLight.intensity = 120;
+
+      // Glow Layer
+      const glow =
+        new BABYLON.GlowLayer("glow", scene);
+
+      glow.intensity = 1.5;
+
+      // Main Orb
+      const orb =
+        BABYLON.MeshBuilder.CreateSphere(
+          "orb",
+          {
+            diameter:3,
+            segments:64
+          },
+          scene
+        );
+
+      const orbMaterial =
+        new BABYLON.PBRMaterial(
+          "orbMat",
+          scene
+        );
+
+      orbMaterial.metallic = 1;
+      orbMaterial.roughness = 0.15;
+
+      orbMaterial.albedoColor =
+        new BABYLON.Color3(0.4,0.2,1);
+
+      orbMaterial.emissiveColor =
+        new BABYLON.Color3(0.2,0.6,1);
+
+      orb.material = orbMaterial;
+
+      // Rings
+      const rings = [];
+
+      for(let i = 0; i < 5; i++){
+
+        const ring =
+          BABYLON.MeshBuilder.CreateTorus(
+            "ring" + i,
+            {
+              diameter:5 + i * 0.7,
+              thickness:0.03,
+              tessellation:200
+            },
+            scene
+          );
+
+        ring.rotation.x =
+          Math.random() * Math.PI;
+
+        ring.rotation.y =
+          Math.random() * Math.PI;
+
+        const ringMat =
+          new BABYLON.StandardMaterial(
+            "ringMat" + i,
+            scene
+          );
+
+        ringMat.emissiveColor =
+          i % 2 === 0
+          ? new BABYLON.Color3(0,0.9,1)
+          : new BABYLON.Color3(1,0.2,0.7);
+
+        ring.material = ringMat;
+
+        rings.push(ring);
+      }
+
+      // Ground
+      const ground =
+        BABYLON.MeshBuilder.CreateGround(
+          "ground",
+          {
+            width:60,
+            height:60
+          },
+          scene
+        );
+
+      ground.position.y = -4;
+
+      const groundMat =
+        new BABYLON.StandardMaterial(
+          "groundMat",
+          scene
+        );
+
+      groundMat.emissiveColor =
+        new BABYLON.Color3(0,0.1,0.2);
+
+      groundMat.wireframe = true;
+
+      ground.material = groundMat;
+
+      // Particles
+      const particleSystem =
+        new BABYLON.ParticleSystem(
+          "particles",
+          3000,
+          scene
+        );
+
+      particleSystem.particleTexture =
+        new BABYLON.Texture(
+          "https://playground.babylonjs.com/textures/flare.png",
+          scene
+        );
+
+      particleSystem.emitter =
+        BABYLON.Vector3.Zero();
+
+      particleSystem.minEmitBox =
+        new BABYLON.Vector3(-8,-8,-8);
+
+      particleSystem.maxEmitBox =
+        new BABYLON.Vector3(8,8,8);
+
+      particleSystem.color1 =
+        new BABYLON.Color4(0,0.9,1,1);
+
+      particleSystem.color2 =
+        new BABYLON.Color4(1,0.2,0.7,1);
+
+      particleSystem.minSize = 0.05;
+      particleSystem.maxSize = 0.15;
+
+      particleSystem.minLifeTime = 4;
+      particleSystem.maxLifeTime = 8;
+
+      particleSystem.emitRate = 500;
+
+      particleSystem.blendMode =
+        BABYLON.ParticleSystem.BLENDMODE_ADD;
+
+      particleSystem.gravity =
+        new BABYLON.Vector3(0,0,0);
+
+      particleSystem.direction1 =
+        new BABYLON.Vector3(-1,-1,-1);
+
+      particleSystem.direction2 =
+        new BABYLON.Vector3(1,1,1);
+
+      particleSystem.minAngularSpeed = 0;
+      particleSystem.maxAngularSpeed = Math.PI;
+
+      particleSystem.minEmitPower = 0.2;
+      particleSystem.maxEmitPower = 0.5;
+
+      particleSystem.updateSpeed = 0.01;
+
+      particleSystem.start();
+
+      // Animation
+      scene.registerBeforeRender(() => {
+
+        const t = performance.now() * 0.001;
+
+        orb.rotation.y += 0.004;
+        orb.rotation.x += 0.002;
+
+        orb.position.y =
+          Math.sin(t * 2) * 0.3;
+
+        rings.forEach((ring, i) => {
+
+          ring.rotation.x += 0.001 + i * 0.0004;
+          ring.rotation.y += 0.002 + i * 0.0006;
+
+          ring.position.y =
+            Math.sin(t + i) * 0.15;
+        });
+
+        blueLight.position.x =
+          Math.sin(t) * 8;
+
+        pinkLight.position.z =
+          Math.cos(t) * 8;
+      });
+
+      return scene;
+    };
+
+    const scene = createScene();
+
+    engine.runRenderLoop(() => {
+      scene.render();
+    });
+
+    window.addEventListener("resize", () => {
+      engine.resize();
+    });
+  </script>
+
+</body>
+</html>
